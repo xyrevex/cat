@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cat Gallery</title>
+  <title>Shared Cat Gallery</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,9 +11,7 @@
       text-align: center;
       padding: 20px;
     }
-
     h1, h2 { margin-bottom: 10px; }
-
     .gallery {
       display: flex;
       flex-wrap: wrap;
@@ -21,7 +19,11 @@
       justify-content: center;
       margin-top: 20px;
     }
-
+    .cat-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .cat-image {
       width: 200px;
       height: 200px;
@@ -31,12 +33,15 @@
       cursor: pointer;
       transition: transform 0.2s, border-color 0.2s;
     }
-
     .cat-image:hover {
       transform: scale(1.05);
       border-color: #fff;
     }
-
+    .timestamp {
+      margin-top: 5px;
+      font-size: 12px;
+      color: #aaa;
+    }
     #modal {
       display: none;
       position: fixed;
@@ -48,13 +53,11 @@
       flex-direction: column;
       z-index: 1000;
     }
-
     #modal img {
       max-width: 90%;
       max-height: 80%;
       border-radius: 10px;
     }
-
     #modal button {
       margin-top: 15px;
       padding: 10px 20px;
@@ -72,36 +75,26 @@
   <input type="file" id="catFiles" accept="image/*" multiple>
   <button id="uploadBtn">Upload</button>
   <p id="status"></p>
-
   <h2>Gallery</h2>
   <div id="gallery" class="gallery"></div>
-
   <div id="modal">
     <img id="modalImage" src="">
-    <a id="downloadBtn" href="" download>
-      <button>Download</button>
-    </a>
+    <a id="downloadBtn" href="" download><button>Download</button></a>
     <button id="closeModal">Close</button>
   </div>
-
   <script>
     const API_KEY = "$2a$10$KK1m18ZnYwXjSeFb.04l6u8Sho3Xf6iHZ0hkiWFcrvVZjdoOvO7aG";
     const BIN_ID = "699a7264d0ea881f40cdd94c";
-
     const IMGBB_KEY = "26d180c2d452ded5bb3df1c560f10a05";
-
     const uploadBtn = document.getElementById("uploadBtn");
     const catFilesInput = document.getElementById("catFiles");
     const status = document.getElementById("status");
     const gallery = document.getElementById("gallery");
-
     const modal = document.getElementById("modal");
     const modalImage = document.getElementById("modalImage");
     const downloadBtn = document.getElementById("downloadBtn");
     const closeModal = document.getElementById("closeModal");
-
     let catUrls = [];
-
     async function loadGallery() {
       try {
         const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -110,13 +103,12 @@
         const data = await res.json();
         catUrls = data.record.catUrls || [];
         gallery.innerHTML = "";
-        catUrls.forEach(url => addCatToGallery(url));
+        catUrls.forEach(item => addCatToGallery(item.url, item.time));
       } catch (err) {
         console.error(err);
         status.textContent = "Could not load gallery.";
       }
     }
-
     async function saveGallery() {
       try {
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
@@ -132,22 +124,20 @@
         status.textContent = "Failed to update gallery.";
       }
     }
-
     async function uploadImage(file) {
       const formData = new FormData();
       formData.append("image", file);
-
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
         method: "POST",
         body: formData
       });
-
       const data = await res.json();
       if (!data.success) throw new Error("Upload failed");
       return data.data.url;
     }
-
-    function addCatToGallery(url) {
+    function addCatToGallery(url, time) {
+      const container = document.createElement("div");
+      container.className = "cat-container";
       const img = document.createElement("img");
       img.src = url;
       img.className = "cat-image";
@@ -156,19 +146,23 @@
         downloadBtn.href = url;
         modal.style.display = "flex";
       });
-      gallery.prepend(img);
+      const ts = document.createElement("div");
+      ts.className = "timestamp";
+      ts.textContent = time;
+      container.appendChild(img);
+      container.appendChild(ts);
+      gallery.prepend(container);
     }
-
     uploadBtn.addEventListener("click", async () => {
       const files = Array.from(catFilesInput.files);
       if (!files.length) return alert("Select at least one file!");
-
       status.textContent = "Uploading...";
       try {
         for (const file of files) {
           const url = await uploadImage(file);
-          catUrls.unshift(url);
-          addCatToGallery(url);
+          const time = new Date().toLocaleString();
+          catUrls.unshift({ url, time });
+          addCatToGallery(url, time);
         }
         await saveGallery();
         status.textContent = "Upload complete!";
@@ -177,11 +171,9 @@
         status.textContent = "Upload failed!";
       }
     });
-
     closeModal.addEventListener("click", () => {
       modal.style.display = "none";
     });
-
     loadGallery();
   </script>
 </body>
