@@ -4,10 +4,57 @@
   <meta charset="UTF-8">
   <title>Shared Cat Gallery</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    .gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    .cat-image { width: 200px; height: 200px; object-fit: cover; border-radius: 10px; border: 2px solid #ccc; }
-    #status { margin: 10px 0; }
+    body { 
+      font-family: sans-serif; 
+      text-align: center; 
+      padding: 20px; 
+      background-color: #000; 
+      color: #fff;
+    }
+    .gallery { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      justify-content: center; 
+      margin-top: 20px;
+    }
+    .cat-image { 
+      width: 200px; 
+      height: 200px; 
+      object-fit: cover; 
+      border-radius: 10px; 
+      border: 2px solid #555; 
+      cursor: pointer; 
+      transition: transform 0.2s;
+    }
+    .cat-image:hover { transform: scale(1.05); }
+
+    #modal { 
+      display: none; 
+      position: fixed; 
+      top: 0; left: 0; 
+      width: 100%; height: 100%; 
+      background-color: rgba(0,0,0,0.9); 
+      justify-content: center; 
+      align-items: center; 
+      flex-direction: column; 
+      z-index: 9999;
+    }
+    #modal img { 
+      max-width: 90%; 
+      max-height: 80%; 
+      border-radius: 10px;
+    }
+    #modal button { 
+      margin-top: 15px; 
+      padding: 10px 20px; 
+      font-size: 16px; 
+      border-radius: 5px; 
+      border: none; 
+      cursor: pointer; 
+      background-color: #fff; 
+      color: #000;
+    }
   </style>
 </head>
 <body>
@@ -19,14 +66,27 @@
   <h2>Gallery</h2>
   <div id="gallery" class="gallery"></div>
 
+  <div id="modal">
+    <img id="modalImage" src="">
+    <a id="downloadBtn" href="" download>
+      <button>Download</button>
+    </a>
+    <button id="closeModal">Close</button>
+  </div>
+
   <script>
     const API_KEY = "$2a$10$KK1m18ZnYwXjSeFb.04l6u8Sho3Xf6iHZ0hkiWFcrvVZjdoOvO7aG";
-    const BIN_ID = "699a7264d0ea881f40cdd94c"; 
+    const BIN_ID = "699a7264d0ea881f40cdd94c";
 
     const uploadBtn = document.getElementById('uploadBtn');
     const catFileInput = document.getElementById('catFile');
     const status = document.getElementById('status');
     const gallery = document.getElementById('gallery');
+
+    const modal = document.getElementById('modal');
+    const modalImage = document.getElementById('modalImage');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const closeModal = document.getElementById('closeModal');
 
     let catUrls = [];
 
@@ -75,6 +135,18 @@
       return data.data.url;
     }
 
+    function addCatToGallery(url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.className = "cat-image";
+      img.addEventListener('click', () => {
+        modalImage.src = url;
+        downloadBtn.href = url;
+        modal.style.display = "flex";
+      });
+      gallery.prepend(img);
+    }
+
     uploadBtn.addEventListener('click', async () => {
       const file = catFileInput.files[0];
       if (!file) return alert("Select a file first!");
@@ -92,12 +164,9 @@
       }
     });
 
-    function addCatToGallery(url) {
-      const img = document.createElement("img");
-      img.src = url;
-      img.className = "cat-image";
-      gallery.prepend(img);
-    }
+    closeModal.addEventListener('click', () => {
+      modal.style.display = "none";
+    });
 
     loadCats();
   </script>
