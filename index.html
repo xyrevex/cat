@@ -2,52 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Upload Your Cat</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Cat Gallery</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    .gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .cat-image { width: 200px; height: 200px; object-fit: cover; border-radius: 10px; border: 2px solid #ccc; }
+    #status { margin: 10px 0; }
+  </style>
 </head>
 <body>
   <h1>Upload Your Cat!</h1>
   <input type="file" id="catFile" accept="image/*">
-  <button id="uploadButton">Upload</button>
-  <p id="statusText"></p>
+  <button id="uploadBtn">Upload</button>
+  <p id="status"></p>
+  
+  <h2>Gallery</h2>
+  <div id="gallery" class="gallery"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  <script>
+    const uploadBtn = document.getElementById('uploadBtn');
+    const catFileInput = document.getElementById('catFile');
+    const status = document.getElementById('status');
+    const gallery = document.getElementById('gallery');
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCEKbzVpN5nS4VnIuO0C3jQYjL-GMBmnA0",
-      authDomain: "cat-storage-4827a.firebaseapp.com",
-      projectId: "cat-storage-4827a",
-      storageBucket: "cat-storage-4827a.appspot.com",
-      messagingSenderId: "185377817734",
-      appId: "1:185377817734:web:09b098103b92e70ffa3d07",
-      measurementId: "G-7Z469126WG"
-    };
+    let catUrls = JSON.parse(localStorage.getItem('catUrls') || '[]');
+    catUrls.forEach(url => addCatToGallery(url));
 
-    const app = initializeApp(firebaseConfig);
-    const storage = getStorage(app);
-    const db = getFirestore(app);
-
-    const uploadButton = document.getElementById('uploadButton');
-    const statusText = document.getElementById('statusText');
-
-    uploadButton.addEventListener('click', async () => {
-      const file = document.getElementById('catFile').files[0];
+    uploadBtn.addEventListener('click', async () => {
+      const file = catFileInput.files[0];
       if (!file) return alert("Select a file first!");
+      status.textContent = "Uploading...";
 
-      statusText.textContent = "Uploading...";
       try {
-        const storageRef = ref(storage, `cats/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        await addDoc(collection(db, "cats"), { url, timestamp: serverTimestamp() });
-        statusText.textContent = "Upload complete! Check the gallery.";
-      } catch {
-        statusText.textContent = "Upload failed.";
+        const form = new FormData();
+        form.append("image", file);
+
+        const res = await fetch("https://api.imgbb.com/1/upload?key=26d180c2d452ded5bb3df1c560f10a05", {
+          method: "POST",
+          body: form
+        });
+
+        const data = await res.json();
+        if (!data.success) throw new Error("Upload failed");
+
+        const url = data.data.url;
+        catUrls.unshift(url); // newest first
+        localStorage.setItem('catUrls', JSON.stringify(catUrls));
+        addCatToGallery(url);
+        status.textContent = "Upload complete!";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Upload failed!";
       }
     });
+
+    function addCatToGallery(url) {
+      const img = document.createElement("img");
+      img.src = url;
+      img.className = "cat-image";
+      gallery.prepend(img);
+    }
   </script>
 </body>
 </html>
