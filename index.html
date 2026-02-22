@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Shared Cat Gallery</title>
+  <title>Cat Gallery</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -129,6 +129,7 @@
         });
         const data = await res.json();
         catUrls = data.record.catUrls || [];
+        catUrls.sort((a, b) => new Date(b.time) - new Date(a.time));
         gallery.innerHTML = "";
         catUrls.forEach(item => {
           const username = item.username || "Anonymous";
@@ -193,7 +194,7 @@
       container.appendChild(img);
       container.appendChild(userDiv);
       container.appendChild(tsDiv);
-      gallery.prepend(container);
+      gallery.appendChild(container);
 
       catCount.textContent = `Total Cats: ${catUrls.length}`;
     }
@@ -206,11 +207,11 @@
       try {
         for (const file of files) {
           const url = await uploadImage(file);
-          const time = new Date().toLocaleString();
+          const time = new Date().toISOString();
           catUrls.unshift({ url, time, username });
-          addCatToGallery(url, time, username);
         }
         await saveGallery();
+        loadGallery();
         status.textContent = "Upload complete!";
       } catch (err) {
         console.error(err);
