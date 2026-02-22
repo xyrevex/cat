@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Cat Gallery</title>
+  <title>Shared Cat Gallery</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
     .gallery { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -15,18 +15,65 @@
   <input type="file" id="catFile" accept="image/*">
   <button id="uploadBtn">Upload</button>
   <p id="status"></p>
-  
+
   <h2>Gallery</h2>
   <div id="gallery" class="gallery"></div>
 
   <script>
+    const API_KEY = "$2a$10$KK1m18ZnYwXjSeFb.04l6u8Sho3Xf6iHZ0hkiWFcrvVZjdoOvO7aG";
+    const BIN_ID = "699a7264d0ea881f40cdd94c"; 
+
     const uploadBtn = document.getElementById('uploadBtn');
     const catFileInput = document.getElementById('catFile');
     const status = document.getElementById('status');
     const gallery = document.getElementById('gallery');
 
-    let catUrls = JSON.parse(localStorage.getItem('catUrls') || '[]');
-    catUrls.forEach(url => addCatToGallery(url));
+    let catUrls = [];
+
+    async function loadCats() {
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+          headers: { "X-Master-Key": API_KEY }
+        });
+        const data = await res.json();
+        catUrls = data.record.catUrls || [];
+        gallery.innerHTML = "";
+        catUrls.forEach(url => addCatToGallery(url));
+      } catch(err) {
+        console.error(err);
+        status.textContent = "Failed to load gallery.";
+      }
+    }
+
+    async function saveCats() {
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": API_KEY
+          },
+          body: JSON.stringify({ catUrls })
+        });
+      } catch(err) {
+        console.error(err);
+        status.textContent = "Failed to update gallery.";
+      }
+    }
+
+    async function uploadImage(file) {
+      const form = new FormData();
+      form.append("image", file);
+
+      const res = await fetch("https://api.imgbb.com/1/upload?key=26d180c2d452ded5bb3df1c560f10a05", {
+        method: "POST",
+        body: form
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error("Upload failed");
+      return data.data.url;
+    }
 
     uploadBtn.addEventListener('click', async () => {
       const file = catFileInput.files[0];
@@ -34,23 +81,12 @@
       status.textContent = "Uploading...";
 
       try {
-        const form = new FormData();
-        form.append("image", file);
-
-        const res = await fetch("https://api.imgbb.com/1/upload?key=26d180c2d452ded5bb3df1c560f10a05", {
-          method: "POST",
-          body: form
-        });
-
-        const data = await res.json();
-        if (!data.success) throw new Error("Upload failed");
-
-        const url = data.data.url;
-        catUrls.unshift(url); // newest first
-        localStorage.setItem('catUrls', JSON.stringify(catUrls));
+        const url = await uploadImage(file);
+        catUrls.unshift(url);
         addCatToGallery(url);
+        await saveCats();
         status.textContent = "Upload complete!";
-      } catch (err) {
+      } catch(err) {
         console.error(err);
         status.textContent = "Upload failed!";
       }
@@ -62,6 +98,8 @@
       img.className = "cat-image";
       gallery.prepend(img);
     }
+
+    loadCats();
   </script>
 </body>
 </html>
