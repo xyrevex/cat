@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Your Cat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Upload Your Cat!</h1>
+  <input type="file" id="catFile" accept="image/*">
+  <button id="uploadButton">Upload</button>
+  <p id="statusText"></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCEKbzVpN5nS4VnIuO0C3jQYjL-GMBmnA0",
+      authDomain: "cat-storage-4827a.firebaseapp.com",
+      projectId: "cat-storage-4827a",
+      storageBucket: "cat-storage-4827a.appspot.com",
+      messagingSenderId: "185377817734",
+      appId: "1:185377817734:web:09b098103b92e70ffa3d07",
+      measurementId: "G-7Z469126WG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const db = getFirestore(app);
+
+    const uploadButton = document.getElementById('uploadButton');
+    const statusText = document.getElementById('statusText');
+
+    uploadButton.addEventListener('click', async () => {
+      const file = document.getElementById('catFile').files[0];
+      if (!file) return alert("Select a file first!");
+
+      statusText.textContent = "Uploading...";
+      try {
+        const storageRef = ref(storage, `cats/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await addDoc(collection(db, "cats"), { url, timestamp: serverTimestamp() });
+        statusText.textContent = "Upload complete! Check the gallery.";
+      } catch {
+        statusText.textContent = "Upload failed.";
+      }
+    });
+  </script>
+</body>
+</html>
