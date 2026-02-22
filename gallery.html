@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cat Gallery</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Cat Gallery</h1>
+  <div id="gallery" class="gallery"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCEKbzVpN5nS4VnIuO0C3jQYjL-GMBmnA0",
+      authDomain: "cat-storage-4827a.firebaseapp.com",
+      projectId: "cat-storage-4827a",
+      storageBucket: "cat-storage-4827a.appspot.com",
+      messagingSenderId: "185377817734",
+      appId: "1:185377817734:web:09b098103b92e70ffa3d07",
+      measurementId: "G-7Z469126WG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const gallery = document.getElementById('gallery');
+
+    async function loadCats() {
+      const catQuery = query(collection(db, "cats"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(catQuery);
+      snapshot.forEach(doc => {
+        const img = document.createElement("img");
+        img.src = doc.data().url;
+        img.className = "cat-image";
+        gallery.appendChild(img);
+      });
+    }
+
+    loadCats();
+  </script>
+</body>
+</html>
