@@ -1,230 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cat Gallery</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #000;
-      color: #fff;
-      text-align: center;
-      padding: 20px;
-    }
-    #catCount {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 16px;
-      color: #fff;
-      background: rgba(0,0,0,0.5);
-      padding: 5px 10px;
-      border-radius: 8px;
-      z-index: 1000;
-    }
-    h1, h2 { margin-bottom: 10px; }
-    .gallery {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .cat-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .cat-image {
-      width: 200px;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 12px;
-      border: 2px solid #555;
-      cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-    .cat-image:hover {
-      transform: scale(1.05);
-      border-color: #fff;
-    }
-    .timestamp, .username {
-      margin-top: 3px;
-      font-size: 12px;
-      color: #aaa;
-    }
-    #modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.9);
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      z-index: 1000;
-    }
-    #modal img {
-      max-width: 90%;
-      max-height: 80%;
-      border-radius: 10px;
-    }
-    #modal button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      background-color: #fff;
-      color: #000;
-    }
-    input[type="text"] {
-      padding: 6px;
-      margin-right: 5px;
-      border-radius: 5px;
-      border: 1px solid #555;
-      background: #222;
-      color: #fff;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Shared Cat Gallery</title>
+<link rel="icon" type="image/jpeg" href="https://i.ibb.co/PGT906Kx/IMG-7116.jpg">
+<style>
+body { font-family: Arial, sans-serif; background:#000; color:#fff; text-align:center; padding:20px; }
+#catCount { position:fixed; top:10px; left:10px; font-size:16px; background:rgba(0,0,0,0.5); padding:5px 10px; border-radius:8px; z-index:1000; }
+h1,h2{ margin-bottom:10px; }
+.gallery{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:20px; }
+.cat-container{ display:flex; flex-direction:column; align-items:center; }
+.cat-image{ width:200px; height:200px; object-fit:cover; border-radius:12px; border:2px solid #555; cursor:pointer; transition:transform 0.2s,border-color 0.2s; }
+.cat-image:hover{ transform:scale(1.05); border-color:#fff; }
+.timestamp, .username{ margin-top:3px; font-size:12px; color:#aaa; }
+#modal{ display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; flex-direction:column; z-index:1000; }
+#modal img{ max-width:90%; max-height:80%; border-radius:10px; }
+#modal button{ margin-top:15px; padding:10px 20px; font-size:16px; border-radius:5px; border:none; cursor:pointer; background:#fff; color:#000; }
+input, button{ margin:5px; padding:6px; border-radius:5px; border:1px solid #555; background:#222; color:#fff; }
+</style>
 </head>
 <body>
-  <div id="catCount">Total Cats: 0</div>
-  <h1>Upload Your Cats!</h1>
-  <link rel="icon" type="image/jpeg" href="https://i.ibb.co/PGT906Kx/IMG-7116.jpg">
-  <input type="text" id="username" placeholder="Enter your username">
-  <input type="file" id="catFiles" accept="image/*" multiple>
-  <button id="uploadBtn">Upload</button>
-  <p id="status"></p>
-  <h2>Gallery</h2>
-  <div id="gallery" class="gallery"></div>
-  <div id="modal">
-    <img id="modalImage" src="">
-    <a id="downloadBtn" href="" download><button>Download</button></a>
-    <button id="closeModal">Close</button>
-  </div>
-  <script>
-    const API_KEY = "$2a$10$KK1m18ZnYwXjSeFb.04l6u8Sho3Xf6iHZ0hkiWFcrvVZjdoOvO7aG";
-    const BIN_ID = "699a7264d0ea881f40cdd94c";
-    const IMGBB_KEY = "26d180c2d452ded5bb3df1c560f10a05";
 
-    const uploadBtn = document.getElementById("uploadBtn");
-    const catFilesInput = document.getElementById("catFiles");
-    const usernameInput = document.getElementById("username");
-    const status = document.getElementById("status");
-    const gallery = document.getElementById("gallery");
-    const catCount = document.getElementById("catCount");
+<div id="catCount">Total Cats: 0</div>
 
-    const modal = document.getElementById("modal");
-    const modalImage = document.getElementById("modalImage");
-    const downloadBtn = document.getElementById("downloadBtn");
-    const closeModal = document.getElementById("closeModal");
+<h1>Upload Your Cats!</h1>
 
-    let catUrls = [];
+<div id="authUI">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button id="signupBtn">Sign Up</button>
+  <button id="loginBtn">Login</button>
+  <button id="logoutBtn">Logout</button>
+  <div id="userStatus">Not logged in</div>
+</div>
 
-    async function loadGallery() {
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-          headers: { "X-Master-Key": API_KEY }
-        });
-        const data = await res.json();
-        catUrls = data.record.catUrls || [];
-        catUrls.sort((a, b) => new Date(b.time) - new Date(a.time));
-        gallery.innerHTML = "";
-        catUrls.forEach(item => {
-          const username = item.username || "Anonymous";
-          addCatToGallery(item.url, item.time, username);
-        });
-        catCount.textContent = `Total Cats: ${catUrls.length}`;
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Could not load gallery.";
-      }
-    }
+<input type="file" id="catFiles" accept="image/*" multiple>
+<button id="uploadBtn">Upload</button>
+<p id="status"></p>
 
-    async function saveGallery() {
-      try {
-        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": API_KEY
-          },
-          body: JSON.stringify({ catUrls })
-        });
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Failed to update gallery.";
-      }
-    }
+<h2>Gallery</h2>
+<div id="gallery" class="gallery"></div>
 
-    async function uploadImage(file) {
-      const formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error("Upload failed");
-      return data.data.url;
-    }
+<div id="modal">
+  <img id="modalImage" src="">
+  <a id="downloadBtn" href="" download><button>Download</button></a>
+  <button id="closeModal">Close</button>
+</div>
 
-    function addCatToGallery(url, time, username) {
-      const container = document.createElement("div");
-      container.className = "cat-container";
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://bczogyesynbfuxaexten.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjem9neWVzeW5iZnV4YWV4dGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzY4NjcsImV4cCI6MjA4NzMxMjg2N30.iL3tcjBFf4_TZBobzbop2iAvsEOdoqCTSHWtiZWExgo';
 
-      const img = document.createElement("img");
-      img.src = url;
-      img.className = "cat-image";
-      img.addEventListener("click", () => {
-        modalImage.src = url;
-        downloadBtn.href = url;
-        modal.style.display = "flex";
-      });
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      const userDiv = document.createElement("div");
-      userDiv.className = "username";
-      userDiv.textContent = username;
+const API_KEY = "26d180c2d452ded5bb3df1c560f10a05";
+const BIN_ID = "699a7264d0ea881f40cdd94c";
 
-      const tsDiv = document.createElement("div");
-      tsDiv.className = "timestamp";
-      tsDiv.textContent = time;
+const catFilesInput = document.getElementById('catFiles');
+const uploadBtn = document.getElementById('uploadBtn');
+const gallery = document.getElementById('gallery');
+const catCount = document.getElementById('catCount');
+const status = document.getElementById('status');
 
-      container.appendChild(img);
-      container.appendChild(userDiv);
-      container.appendChild(tsDiv);
-      gallery.appendChild(container);
+const modal = document.getElementById("modal");
+const modalImage = document.getElementById("modalImage");
+const downloadBtn = document.getElementById("downloadBtn");
+const closeModal = document.getElementById("closeModal");
 
-      catCount.textContent = `Total Cats: ${catUrls.length}`;
-    }
+let catUrls = [];
 
-    uploadBtn.addEventListener("click", async () => {
-      const files = Array.from(catFilesInput.files);
-      if (!files.length) return alert("Select at least one file!");
-      const username = usernameInput.value.trim() || "Anonymous";
-      status.textContent = "Uploading...";
-      try {
-        for (const file of files) {
-          const url = await uploadImage(file);
-          const time = new Date().toISOString();
-          catUrls.unshift({ url, time, username });
-        }
-        await saveGallery();
-        loadGallery();
-        status.textContent = "Upload complete!";
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Upload failed!";
-      }
+async function loadCats(){
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
+    const data = await res.json();
+    catUrls = data.record.catUrls || [];
+    gallery.innerHTML = "";
+    catUrls.forEach(c => addCatToGallery(c.url, c.time, c.user));
+    catCount.textContent = `Total Cats: ${catUrls.length}`;
+  } catch(e){ console.error(e); status.textContent="Failed to load gallery"; }
+}
+
+function addCatToGallery(url,time,username){
+  const container = document.createElement('div'); container.className='cat-container';
+  const img = document.createElement('img'); img.src=url; img.className='cat-image';
+  img.addEventListener('click',()=>{ modalImage.src=url; downloadBtn.href=url; modal.style.display='flex'; });
+  const userDiv=document.createElement('div'); userDiv.className='username'; userDiv.textContent=username;
+  const tsDiv=document.createElement('div'); tsDiv.className='timestamp'; tsDiv.textContent=new Date(time).toLocaleString();
+  container.appendChild(img); container.appendChild(userDiv); container.appendChild(tsDiv);
+  gallery.prepend(container);
+}
+
+uploadBtn.addEventListener('click', async ()=>{
+  const files = Array.from(catFilesInput.files);
+  const { data: { user } } = await supabase.auth.getUser();
+  if(!user){ alert('Log in first!'); return; }
+  if(!files.length){ alert('Select at least one file'); return; }
+
+  status.textContent='Uploading...';
+  for(const file of files){
+    const form = new FormData(); form.append("image", file);
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, { method:"POST", body:form });
+    const data = await res.json();
+    if(!data.success){ console.error("Upload failed"); continue; }
+    const url = data.data.url;
+    catUrls.unshift({ url, time: Date.now(), user:user.email });
+  }
+
+  try{
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: "PUT",
+      headers:{ "Content-Type":"application/json","X-Master-Key":API_KEY },
+      body: JSON.stringify({ catUrls })
     });
+  }catch(e){ console.error(e); status.textContent="Failed to update gallery"; }
 
-    closeModal.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
+  loadCats(); status.textContent='Upload complete!';
+});
 
-    loadGallery();
-  </script>
+closeModal.addEventListener('click',()=>{ modal.style.display='none'; });
+
+const emailInput=document.getElementById('email');
+const passwordInput=document.getElementById('password');
+const signupBtn=document.getElementById('signupBtn');
+const loginBtn=document.getElementById('loginBtn');
+const logoutBtn=document.getElementById('logoutBtn');
+const userStatus=document.getElementById('userStatus');
+
+signupBtn.onclick=async ()=>{
+  const { data, error } = await supabase.auth.signUp({ email:emailInput.value, password:passwordInput.value });
+  if(error) alert(error.message); else alert('Check your email to confirm signup!');
+}
+loginBtn.onclick=async ()=>{
+  const { data, error } = await supabase.auth.signInWithPassword({ email:emailInput.value, password:passwordInput.value });
+  if(error) alert(error.message);
+}
+logoutBtn.onclick=async ()=>{
+  await supabase.auth.signOut();
+}
+
+supabase.auth.onAuthStateChange((event, session)=>{
+  if(session && session.user){ userStatus.textContent=`Logged in as ${session.user.email}`; }
+  else{ userStatus.textContent='Not logged in'; }
+});
+
+loadCats();
+</script>
 </body>
 </html>
