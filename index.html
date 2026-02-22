@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Shared Cat Gallery</title>
-<link rel="icon" type="image/jpeg" href="https://i.ibb.co/PGT906Kx/IMG-7116.jpg">
+<link rel="icon" href="https://i.ibb.co/PGT906Kx/IMG-7116.jpg" type="image/jpeg">
 <style>
 body { font-family: Arial, sans-serif; background:#000; color:#fff; text-align:center; padding:20px; }
 #catCount { position:fixed; top:10px; left:10px; font-size:16px; background:rgba(0,0,0,0.5); padding:5px 10px; border-radius:8px; z-index:1000; }
@@ -76,7 +76,7 @@ async function loadCats(){
     const data = await res.json();
     catUrls = data.record.catUrls || [];
     gallery.innerHTML = "";
-    catUrls.forEach(c => addCatToGallery(c.url, c.time, c.user));
+    catUrls.slice().reverse().forEach(c => addCatToGallery(c.url, c.time, c.user)); // newest first
     catCount.textContent = `Total Cats: ${catUrls.length}`;
   } catch(e){ console.error(e); status.textContent="Failed to load gallery"; }
 }
@@ -88,12 +88,12 @@ function addCatToGallery(url,time,username){
   const userDiv=document.createElement('div'); userDiv.className='username'; userDiv.textContent=username;
   const tsDiv=document.createElement('div'); tsDiv.className='timestamp'; tsDiv.textContent=new Date(time).toLocaleString();
   container.appendChild(img); container.appendChild(userDiv); container.appendChild(tsDiv);
-  gallery.prepend(container);
+  gallery.appendChild(container);
 }
 
 uploadBtn.addEventListener('click', async ()=>{
   const files = Array.from(catFilesInput.files);
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data:{user} } = await supabase.auth.getUser();
   if(!user){ alert('Log in first!'); return; }
   if(!files.length){ alert('Select at least one file'); return; }
 
@@ -103,8 +103,7 @@ uploadBtn.addEventListener('click', async ()=>{
     const res = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, { method:"POST", body:form });
     const data = await res.json();
     if(!data.success){ console.error("Upload failed"); continue; }
-    const url = data.data.url;
-    catUrls.unshift({ url, time: Date.now(), user:user.email });
+    catUrls.unshift({ url: data.data.url, time: Date.now(), user:user.email });
   }
 
   try{
