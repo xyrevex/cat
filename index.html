@@ -54,7 +54,13 @@
     async function getGallery() {
       try {
         const res = await fetch("https://project-8fhoj.vercel.app/api/getGallery");
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch(e) {
+          console.warn("Invalid JSON from gallery API");
+          data = { catUrls: [] };
+        }
         catUrls = data.catUrls || [];
         catUrls.sort((a,b)=> new Date(b.time) - new Date(a.time));
         gallery.innerHTML = "";
@@ -74,8 +80,6 @@
       img.src = url;
       img.className = "cat-image";
       img.loading = "lazy";
-      img.width = 200;
-      img.height = 150;
       img.addEventListener("click", () => {
         modalImage.src = url;
         downloadBtn.href = url;
@@ -94,15 +98,6 @@
       container.appendChild(userDiv);
       container.appendChild(tsDiv);
       gallery.appendChild(container);
-
-      catCount.textContent = `Total Cats: ${catUrls.length}`;
-    }
-
-    async function getUploadUrl(file) {
-      const res = await fetch(`https://project-8fhoj.vercel.app/api/upload?filename=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`);
-      const data = await res.json();
-      if (!data.url) throw new Error("Failed to get upload URL");
-      return data;
     }
 
     uploadBtn.addEventListener("click", async () => {
@@ -113,12 +108,29 @@
       status.textContent = "Uploading...";
       try {
         for (const file of files) {
-          const { url: signedUrl, publicUrl } = await getUploadUrl(file);
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
 
-          await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+          const res = await fetch("https://project-8fhoj.vercel.app/api/upload", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              filename: file.name,
+              type: file.type,
+              fileBase64: base64,
+              username
+            })
+          });
+
+          const data = await res.json();
+          if (!data.url) throw new Error("Upload failed");
 
           const time = new Date().toISOString();
-          catUrls.unshift({ url: publicUrl, time, username });
+          catUrls.unshift({ url: data.url, time, username });
         }
 
         await fetch("https://project-8fhoj.vercel.app/api/saveGallery", {
@@ -127,7 +139,7 @@
           body: JSON.stringify({ catUrls })
         });
 
-        getGallery();
+        await getGallery();
         status.textContent = "Upload complete!";
       } catch(err) {
         console.error(err);
