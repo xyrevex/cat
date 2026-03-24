@@ -21,12 +21,15 @@
 </style>
 </head>
 <body>
+
 <div id="catCount">Total Cats: 0</div>
+
 <h1>Upload Your Cats!</h1>
 <input type="text" id="username" placeholder="Enter your username">
 <input type="file" id="catFiles" accept="image/*" multiple>
 <button id="uploadBtn">Upload</button>
 <p id="status"></p>
+
 <h2>Gallery</h2>
 <div id="gallery" class="gallery"></div>
 
@@ -37,70 +40,107 @@
 </div>
 
 <script>
-const uploadBtn=document.getElementById("uploadBtn");
-const catFilesInput=document.getElementById("catFiles");
-const usernameInput=document.getElementById("username");
-const status=document.getElementById("status");
-const gallery=document.getElementById("gallery");
-const catCount=document.getElementById("catCount");
-const modal=document.getElementById("modal");
-const modalImage=document.getElementById("modalImage");
-const downloadBtn=document.getElementById("downloadBtn");
-const closeModal=document.getElementById("closeModal");
+const API_URL = "https://project-8fhoj.vercel.app/api/upload";
 
-let catUrls=[];
+const uploadBtn = document.getElementById("uploadBtn");
+const catFilesInput = document.getElementById("catFiles");
+const usernameInput = document.getElementById("username");
+const status = document.getElementById("status");
+const gallery = document.getElementById("gallery");
+const catCount = document.getElementById("catCount");
+const modal = document.getElementById("modal");
+const modalImage = document.getElementById("modalImage");
+const downloadBtn = document.getElementById("downloadBtn");
+const closeModal = document.getElementById("closeModal");
 
-async function getGallery(){
-  try{
-    const res=await fetch("/cat-gallery-api/api/upload.js");
+let catUrls = [];
+
+async function getGallery() {
+  try {
+    const res = await fetch(API_URL, { method: "GET" });
     let data;
-    try{data=await res.json();}catch(e){data={catUrls:[]}}
-    catUrls=data.catUrls||[];
-    catUrls.sort((a,b)=>new Date(b.time)-new Date(a.time));
-    gallery.innerHTML="";
-    catUrls.forEach(item=>addCatToGallery(item.url,item.time,item.username||"Anonymous"));
-    catCount.textContent=`Total Cats: ${catUrls.length}`;
-  }catch(err){console.error(err);status.textContent="Could not load gallery.";}
+    try { data = await res.json(); } catch(e){ data = { catUrls: [] }; }
+    catUrls = data.catUrls || [];
+    catUrls.sort((a,b)=> new Date(b.time)-new Date(a.time));
+    gallery.innerHTML = "";
+    catUrls.forEach(item => addCatToGallery(item.url, item.time, item.username || "Anonymous"));
+    catCount.textContent = `Total Cats: ${catUrls.length}`;
+  } catch(err) {
+    console.error(err);
+    status.textContent = "Could not load gallery.";
+  }
 }
 
-function addCatToGallery(url,time,username){
-  const container=document.createElement("div");
-  container.className="cat-container";
-  const img=document.createElement("img");
-  img.src=url; img.className="cat-image"; img.loading="lazy";
-  img.addEventListener("click",()=>{modalImage.src=url;downloadBtn.href=url;modal.style.display="flex";});
-  const userDiv=document.createElement("div"); userDiv.className="username"; userDiv.textContent=username;
-  const tsDiv=document.createElement("div"); tsDiv.className="timestamp"; tsDiv.textContent=new Date(time).toLocaleString();
-  container.appendChild(img); container.appendChild(userDiv); container.appendChild(tsDiv);
+function addCatToGallery(url, time, username) {
+  const container = document.createElement("div");
+  container.className = "cat-container";
+
+  const img = document.createElement("img");
+  img.src = url;
+  img.className = "cat-image";
+  img.loading = "lazy";
+  img.addEventListener("click", () => {
+    modalImage.src = url;
+    downloadBtn.href = url;
+    modal.style.display = "flex";
+  });
+
+  const userDiv = document.createElement("div");
+  userDiv.className = "username";
+  userDiv.textContent = username;
+
+  const tsDiv = document.createElement("div");
+  tsDiv.className = "timestamp";
+  tsDiv.textContent = new Date(time).toLocaleString();
+
+  container.appendChild(img);
+  container.appendChild(userDiv);
+  container.appendChild(tsDiv);
   gallery.appendChild(container);
 }
 
-uploadBtn.addEventListener("click",async()=>{
-  const files=Array.from(catFilesInput.files);
-  if(!files.length)return alert("Select at least one file!");
-  const username=usernameInput.value.trim()||"Anonymous";
-  status.textContent="Uploading...";
-  try{
-    for(const file of files){
-      const base64=await new Promise((resolve,reject)=>{
-        const reader=new FileReader();
-        reader.onload=()=>resolve(reader.result.split(',')[1]);
-        reader.onerror=reject;
+uploadBtn.addEventListener("click", async () => {
+  const files = Array.from(catFilesInput.files);
+  if (!files.length) return alert("Select at least one file!");
+  const username = usernameInput.value.trim() || "Anonymous";
+  status.textContent = "Uploading...";
+
+  try {
+    for (const file of files) {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      const res=await fetch("/api/upload",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({filename:file.name,type:file.type,fileBase64:base64,username})});
-      const data=await res.json();
-      if(!data.url)throw new Error("Upload failed");
-      const time=new Date().toISOString();
-      catUrls.unshift({url:data.url,time,username});
+
+      const res = await fetch(API_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, type: file.type, fileBase64: base64, username })
+      });
+
+      const data = await res.json();
+      if (!data.url) throw new Error("Upload failed");
+
+      const time = new Date().toISOString();
+      catUrls.unshift({ url: data.url, time, username });
     }
+
     await getGallery();
-    status.textContent="Upload complete!";
-  }catch(err){console.error(err);status.textContent="Upload failed!";}
+    status.textContent = "Upload complete!";
+  } catch(err) {
+    console.error(err);
+    status.textContent = "Upload failed!";
+  }
 });
 
-closeModal.addEventListener("click",()=>{modal.style.display="none";});
+closeModal.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+
 getGallery();
 </script>
+
 </body>
 </html>
