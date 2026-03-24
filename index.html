@@ -50,7 +50,6 @@ const closeModal=document.getElementById("closeModal");
 
 let catUrls=[];
 
-// Load gallery
 async function getGallery(){
   try{
     const res=await fetch("/api/upload");
@@ -76,7 +75,6 @@ function addCatToGallery(url,time,username){
   gallery.appendChild(container);
 }
 
-// Upload files as base64
 uploadBtn.addEventListener("click",async()=>{
   const files=Array.from(catFilesInput.files);
   if(!files.length)return alert("Select at least one file!");
