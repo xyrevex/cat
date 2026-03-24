@@ -101,7 +101,6 @@
 <body>
   <div id="catCount">Total Cats: 0</div>
   <h1>Upload Your Cats!</h1>
-  <link rel="icon" type="image/jpeg" href="https://i.ibb.co/PGT906Kx/IMG-7116.jpg">
   <input type="text" id="username" placeholder="Enter your username">
   <input type="file" id="catFiles" accept="image/*" multiple>
   <button id="uploadBtn">Upload</button>
@@ -116,9 +115,7 @@
   </div>
 
   <script>
-    const API_KEY = "$2a$10$KK1m18ZnYwXjSeFb.04l6u8Sho3Xf6iHZ0hkiWFcrvVZjdoOvO7aG";
-    const BIN_ID = "699a7264d0ea881f40cdd94c";
-    const IMGBB_KEY = "26d180c2d452ded5bb3df1c560f10a05";
+    const API_BASE = "https://project-8fhoj.vercel.app";
 
     const uploadBtn = document.getElementById("uploadBtn");
     const catFilesInput = document.getElementById("catFiles");
@@ -136,17 +133,12 @@
 
     async function loadGallery() {
       try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-          headers: { "X-Master-Key": API_KEY }
-        });
+        const res = await fetch(`${API_BASE}/api/getGallery`);
         const data = await res.json();
-        catUrls = data.record.catUrls || [];
+        catUrls = data.catUrls || [];
         catUrls.sort((a, b) => new Date(b.time) - new Date(a.time));
         gallery.innerHTML = "";
-        catUrls.forEach(item => {
-          const username = item.username || "Anonymous";
-          addCatToGallery(item.url, item.time, username);
-        });
+        catUrls.forEach(item => addCatToGallery(item.url, item.time, item.username));
         catCount.textContent = `Total Cats: ${catUrls.length}`;
       } catch (err) {
         console.error(err);
@@ -154,32 +146,21 @@
       }
     }
 
-    async function saveGallery() {
-      try {
-        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": API_KEY
-          },
-          body: JSON.stringify({ catUrls })
-        });
-      } catch (err) {
-        console.error(err);
-        status.textContent = "Failed to update gallery.";
-      }
-    }
-
     async function uploadImage(file) {
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, {
-        method: "POST",
-        body: formData
-      });
+      const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", body: formData });
       const data = await res.json();
       if (!data.success) throw new Error("Upload failed");
-      return data.data.url;
+      return data.url;
+    }
+
+    async function saveGallery() {
+      await fetch(`${API_BASE}/api/saveGallery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ catUrls })
+      });
     }
 
     function addCatToGallery(url, time, username) {
@@ -189,8 +170,8 @@
       const img = document.createElement("img");
       img.src = url;
       img.className = "cat-image";
-      img.loading = "lazy"; // lazy like me
-      img.width = 200;      // downscale cuz som1 said so
+      img.loading = "lazy";
+      img.width = 200;
       img.height = 150;
       img.addEventListener("click", () => {
         modalImage.src = url;
@@ -200,11 +181,11 @@
 
       const userDiv = document.createElement("div");
       userDiv.className = "username";
-      userDiv.textContent = username;
+      userDiv.textContent = username || "Anonymous";
 
       const tsDiv = document.createElement("div");
       tsDiv.className = "timestamp";
-      tsDiv.textContent = new Date(time).toLocaleString(); // i fucked up the time
+      tsDiv.textContent = new Date(time).toLocaleString();
 
       container.appendChild(img);
       container.appendChild(userDiv);
@@ -234,9 +215,7 @@
       }
     });
 
-    closeModal.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
+    closeModal.addEventListener("click", () => { modal.style.display = "none"; });
 
     loadGallery();
   </script>
