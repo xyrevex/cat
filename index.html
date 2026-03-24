@@ -52,7 +52,7 @@ let catUrls=[];
 
 async function getGallery(){
   try{
-    const res=await fetch("/api/upload");
+    const res=await fetch("/cat-gallery-api/api/upload");
     let data;
     try{data=await res.json();}catch(e){data={catUrls:[]}}
     catUrls=data.catUrls||[];
