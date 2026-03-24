@@ -51,7 +51,7 @@
 
     let catUrls = [];
 
-    async function loadGallery() {
+    async function getGallery() {
       try {
         const res = await fetch("https://project-8fhoj.vercel.app/api/getGallery");
         const data = await res.json();
@@ -127,7 +127,7 @@
           body: JSON.stringify({ catUrls })
         });
 
-        loadGallery();
+        getGallery();
         status.textContent = "Upload complete!";
       } catch(err) {
         console.error(err);
@@ -139,7 +139,7 @@
       modal.style.display = "none";
     });
 
-    loadGallery();
+    getGallery();
   </script>
 </body>
 </html>
